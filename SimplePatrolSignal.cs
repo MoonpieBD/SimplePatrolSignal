@@ -84,6 +84,7 @@ namespace Oxide.Plugins
                     ["RaidBlocked"] = "You cannot call a patrol helicopter during a raid block.",
                     ["NoEscapeBlocked"] =
                         "You cannot call a patrol helicopter during combat block.",
+                    ["HeliCalledBroadcast"] = "<color=#FFD700>Patrol Helicopter Alert:</color> <color=#00FF00>{0}</color> has just called a patrol helicopter!",
                 },
                 this
             );
@@ -484,7 +485,7 @@ namespace Oxide.Plugins
             {
                 if (p == null || !p.IsConnected) continue;
 
-                string message = $"<color=#FFD700>Patrol Helicopter Alert:</color> <color=#00FF00>{player.displayName}</color> has just called a patrol helicopter!";
+                string message = string.Format(GetMessage("HeliCalledBroadcast", p.UserIDString), player.displayName);
                 p.ChatMessage(message);
             }
 
