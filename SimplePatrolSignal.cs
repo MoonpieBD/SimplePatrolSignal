@@ -723,19 +723,19 @@ namespace Oxide.Plugins
             public float Duration { get; set; } = 1800f;
 
             [JsonProperty("Helicopter Health")]
-            public float Health { get; set; } = 10000f;
+            public float Health { get; set; } = 15000f;
 
             [JsonProperty("Main Rotor Health")]
-            public float MainRotorHealth { get; set; } = 900f;
+            public float MainRotorHealth { get; set; } = 3000f;
 
             [JsonProperty("Tail Rotor Health")]
-            public float TailRotorHealth { get; set; } = 500f;
+            public float TailRotorHealth { get; set; } = 3000f;
 
             [JsonProperty("Number of Crates to Spawn")]
-            public int CrateAmount { get; set; } = 6;
+            public int CrateAmount { get; set; } = 5;
 
             [JsonProperty("Time Before Firing Rockets (seconds)")]
-            public float TimeBeforeRocket { get; set; } = 0.25f;
+            public float TimeBeforeRocket { get; set; } = 0.5f;
         }
 
         private class LootSettings
@@ -747,11 +747,11 @@ namespace Oxide.Plugins
             public Dictionary<string, float> Containers { get; set; } =
                 new Dictionary<string, float>
                 {
-                    { "crate_normal", 5f },
-                    { "crate_normal_2", 5f },
-                    { "crate_elite", 10f },
-                    { "heli_crate", 15f },
-                    { "bradley_crate", 15f },
+                    { "crate_normal", 0f },
+                    { "crate_normal_2", 0f },
+                    { "crate_elite", 5f },
+                    { "heli_crate", 10f },
+                    { "bradley_crate", 10f },
                 };
         }
 
