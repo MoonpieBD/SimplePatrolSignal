@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("SimplePatrolSignal", "Moonpie", "1.0.1")]
+    [Info("SimplePatrolSignal", "Moonpie", "1.0.2")]
     [Description("Call a Patrol Helicopter to your location using a special supply signal.")]
     public class SimplePatrolSignal : RustPlugin
     {
@@ -22,7 +22,6 @@ namespace Oxide.Plugins
         private const string PermissionVIP = "simplepatrolsignal.vip";
         private const string PermissionAdmin = "simplepatrolsignal.admin";
 
-
         private StoredData storedData;
 
         private PatrolHelicopter patrol;
@@ -32,7 +31,9 @@ namespace Oxide.Plugins
         private bool originalMonumentCrash;
         private Vector3 patrolZone;
         private Timer reconsiderTimer;
-        private List<LootContainer> processedContainers = new List<LootContainer>();
+        private Timer saveDataTimer;
+        private readonly object processedContainersLock = new object();
+        private HashSet<LootContainer> processedContainers = new HashSet<LootContainer>();
 
         #region Initialization
 
@@ -194,7 +195,7 @@ namespace Oxide.Plugins
             }
 
             storedData.Cooldowns.Remove(player.userID);
-            SaveData();
+            ScheduleSaveData();
         }
 
         private void CleanupExpiredCooldowns()
@@ -283,7 +284,7 @@ namespace Oxide.Plugins
         private void SetCooldown(BasePlayer player)
         {
             storedData.Cooldowns[player.userID] = CurrentTime();
-            SaveData();
+            ScheduleSaveData();
         }
 
         private double CurrentTime() =>
@@ -292,6 +293,14 @@ namespace Oxide.Plugins
         private bool HasVIPPermission(BasePlayer player)
         {
             return permission.UserHasPermission(player.UserIDString, PermissionVIP);
+        }
+
+        private void ScheduleSaveData()
+        {
+            if (saveDataTimer != null && !saveDataTimer.Destroyed)
+                return;
+
+            saveDataTimer = timer.Once(5f, SaveData);
         }
 
         #endregion
@@ -426,10 +435,11 @@ namespace Oxide.Plugins
             if (container == null || !config.LootSettings.Enabled)
                 return null;
 
-            if (processedContainers.Contains(container))
-                return null;
-
-            processedContainers.Add(container);
+            lock (processedContainersLock)
+            {
+                if (!processedContainers.Add(container))
+                    return null;
+            }
 
             string containerName = container.ShortPrefabName;
             float dropChance;
@@ -455,7 +465,10 @@ namespace Oxide.Plugins
         {
             if (container != null)
             {
-                processedContainers.Remove(container);
+                lock (processedContainersLock)
+                {
+                    processedContainers.Remove(container);
+                }
             }
         }
 
@@ -814,4 +827,3 @@ namespace Oxide.Plugins
         #endregion
     }
 }
- 
