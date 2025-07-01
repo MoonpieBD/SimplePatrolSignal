@@ -85,7 +85,7 @@ namespace Oxide.Plugins
                     ["RaidBlocked"] = "You cannot call a patrol helicopter during a raid block.",
                     ["NoEscapeBlocked"] =
                         "You cannot call a patrol helicopter during combat block.",
-                    ["HeliCalledBroadcast"] = "<color=#FFD700>Patrol Helicopter Alert:</color> <color=#00FF00>{0}</color> has just called a patrol helicopter!",
+                    ["HeliCalledBroadcast"] = "<color=#cc6900>Patrol Helicopter Alert:</color> <color=#0093f5>{0}</color> has just called a patrol helicopter!",
                 },
                 this
             );
