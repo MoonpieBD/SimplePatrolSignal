@@ -16,6 +16,10 @@ namespace Oxide.Plugins
         [PluginReference("NoEscape")]
         private Plugin NoEscape;
 
+        private Dictionary<ulong, float> playerDamage = new Dictionary<ulong, float>();
+        private float totalDamageDealt = 0f;
+
+
         private const string HELI_PREFAB =
             "assets/prefabs/npc/patrol helicopter/patrolhelicopter.prefab";
         private const string PermissionUse = "simplepatrolsignal.use";
@@ -320,6 +324,26 @@ namespace Oxide.Plugins
 
             return (bool)(NoEscape.Call("IsRaidBlocked", player) ?? false);
         }
+
+        private void OnEntityTakeDamage(BaseCombatEntity entity, HitInfo info)
+        {
+            if (entity == null || info == null || patrol == null) return;
+            if (entity.net?.ID != patrol.net?.ID) return;
+            if (!(info.InitiatorPlayer is BasePlayer player)) return;
+
+            float damage = info.damageTypes.Total();
+
+            if (damage <= 0f) return;
+
+            ulong userId = player.userID;
+
+            if (!playerDamage.ContainsKey(userId))
+                playerDamage[userId] = 0f;
+
+            playerDamage[userId] += damage;
+            totalDamageDealt += damage;
+        }
+
 
         private bool IsNoEscapeActive(BasePlayer player)
         {
@@ -632,6 +656,27 @@ namespace Oxide.Plugins
                 reconsiderTimer.Destroy();
             }
 
+            if (playerDamage.Count > 0 && totalDamageDealt > 0f)
+            {
+                List<string> lines = new List<string> { "<color=#ffa500><size=14>--- Patrol Helicopter Damage Report ---</size></color>" };
+
+                foreach (var entry in playerDamage.OrderByDescending(p => p.Value))
+                {
+                    var attacker = BasePlayer.FindByID(entry.Key) ?? BasePlayer.FindSleeping(entry.Key);
+                    string name = attacker?.displayName ?? $"Unknown ({entry.Key})";
+                    float percent = (entry.Value / totalDamageDealt) * 100f;
+                    lines.Add($"<color=#ffcc00>{name}</color>: {percent:F1}% damage");
+                }
+
+                foreach (var p in BasePlayer.activePlayerList)
+                {
+                    foreach (var line in lines)
+                    {
+                        p.ChatMessage(line);
+                    }
+                }
+            }
+
             if (patrol != null && !patrol.IsDestroyed)
             {
                 patrol.myAI.Retire();
@@ -642,6 +687,9 @@ namespace Oxide.Plugins
             PatrolHelicopterAI.use_danger_zones = originalUseDangerZones;
             PatrolHelicopterAI.monument_crash = originalMonumentCrash;
             isActive = false;
+            playerDamage.Clear();
+            totalDamageDealt = 0f;
+
         }
 
         #endregion
