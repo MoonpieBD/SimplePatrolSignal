@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("SimplePatrolSignal", "Moonpie", "1.0.0")]
+    [Info("SimplePatrolSignal", "Moonpie", "1.0.1")]
     [Description("Call a Patrol Helicopter to your location using a special supply signal.")]
     public class SimplePatrolSignal : RustPlugin
     {
@@ -62,7 +62,7 @@ namespace Oxide.Plugins
 
         #region Localization
 
-        private void LoadDefaultMessages()
+        protected override void LoadDefaultMessages()
         {
             lang.RegisterMessages(
                 new Dictionary<string, string>
@@ -545,7 +545,6 @@ namespace Oxide.Plugins
         private float lastReconsiderTime = 0f;
         private float reconsiderCooldown = 15f; // seconds between repositioning
         private float minDistanceToPlayer = 150f; // minimum distance heli wants to keep
-        private float maxDistanceFromOriginalZone = 500f; // max allowed distance from patrolZone
 
         private void ReconsiderPosition()
         {
@@ -583,9 +582,9 @@ namespace Oxide.Plugins
 
                     // Clamp targetPos to be within 500m of original patrolZone
                     Vector3 directionFromOriginal = targetPos - patrolZone;
-                    if (directionFromOriginal.magnitude > maxDistanceFromOriginalZone)
+                    if (directionFromOriginal.magnitude > config.Patrol.StayInRadius)
                     {
-                        targetPos = patrolZone + directionFromOriginal.normalized * maxDistanceFromOriginalZone;
+                        targetPos = patrolZone + directionFromOriginal.normalized * config.Patrol.StayInRadius;
                     }
 
                     patrol.myAI.interestZoneOrigin = targetPos;
@@ -711,10 +710,10 @@ namespace Oxide.Plugins
             public float Warmup { get; set; } = 5f;
 
             [JsonProperty("Default Cooldown Time (seconds)")]
-            public float CooldownSeconds { get; set; } = 3600f;
+            public float CooldownSeconds { get; set; } = 1800f;
 
             [JsonProperty("VIP Cooldown Time (seconds)")]
-            public float VIPCooldownSeconds { get; set; } = 1800f;
+            public float VIPCooldownSeconds { get; set; } = 900f;
         }
 
         private class PatrolSettings
@@ -736,6 +735,9 @@ namespace Oxide.Plugins
 
             [JsonProperty("Time Before Firing Rockets (seconds)")]
             public float TimeBeforeRocket { get; set; } = 0.5f;
+
+            [JsonProperty("Radius in which the helicopter should stay after getting ")]
+            public float StayInRadius { get; set; } = 500f;
         }
 
         private class LootSettings
@@ -747,8 +749,8 @@ namespace Oxide.Plugins
             public Dictionary<string, float> Containers { get; set; } =
                 new Dictionary<string, float>
                 {
-                    { "crate_normal", 0f },
-                    { "crate_normal_2", 0f },
+                    { "crate_normal", 0.1f },
+                    { "crate_normal_2", 0.1f },
                     { "crate_elite", 5f },
                     { "heli_crate", 10f },
                     { "bradley_crate", 10f },
@@ -781,15 +783,26 @@ namespace Oxide.Plugins
 
         private void ConciliateConfiguration(VersionNumber serverVersion)
         {
+            if (config.Signal == null)
+                config.Signal = new SupplySignalSettings();
+
+            if (config.Patrol == null)
+                config.Patrol = new PatrolSettings();
+
+            if (config.LootSettings == null)
+                config.LootSettings = new LootSettings();
+
             config.Signal.CooldownSeconds = 3600f;
             config.Signal.VIPCooldownSeconds = 1800f;
+
             config.BlockDuringRaid = true;
             config.BlockDuringNoEscape = true;
-            PrintWarning("Merging new configuration keys into existing config...");
 
             config.version.major = Version.Major;
             config.version.minor = Version.Minor;
             config.version.patch = Version.Patch;
+
+            PrintWarning("Merging new configuration keys into existing config...");
             SaveConfig();
         }
 
