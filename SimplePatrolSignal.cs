@@ -35,6 +35,7 @@ namespace Oxide.Plugins
         private bool originalMonumentCrash;
         private Vector3 patrolZone;
         private Timer reconsiderTimer;
+        private Timer patrolDestroyTimer;
         private Timer saveDataTimer;
         private readonly object processedContainersLock = new object();
         private HashSet<LootContainer> processedContainers = new HashSet<LootContainer>();
@@ -345,6 +346,8 @@ namespace Oxide.Plugins
         }
 
 
+
+
         private bool IsNoEscapeActive(BasePlayer player)
         {
             if (NoEscape == null || !NoEscape.IsLoaded)
@@ -485,6 +488,16 @@ namespace Oxide.Plugins
             return null;
         }
 
+        private void OnEntityDeath(BaseCombatEntity entity, HitInfo info)
+        {
+            if (entity != null && patrol != null && entity.net?.ID == patrol.net?.ID)
+            {
+                DebugLog("Patrol Helicopter was destroyed by players.");
+                DestroyPatrol();
+            }
+        }
+
+
         private void OnEntityKill(LootContainer container)
         {
             if (container != null)
@@ -576,7 +589,7 @@ namespace Oxide.Plugins
             patrol.myAI.ExitCurrentState();
 
             reconsiderTimer = timer.Repeat(10f, 0, ReconsiderPosition);
-            timer.Once(config.Patrol.Duration, DestroyPatrol);
+            patrolDestroyTimer = timer.Once(config.Patrol.Duration, DestroyPatrol);
         }
 
         private float lastReconsiderTime = 0f;
@@ -649,6 +662,9 @@ namespace Oxide.Plugins
         private void DestroyPatrol()
         {
             DebugLog("Destroying Patrol Helicopter.");
+            if (!isActive)
+                return;
+
             Puts(GetMessage("DestroyingPatrol"));
 
             if (reconsiderTimer != null && !reconsiderTimer.Destroyed)
@@ -686,6 +702,12 @@ namespace Oxide.Plugins
 
             PatrolHelicopterAI.use_danger_zones = originalUseDangerZones;
             PatrolHelicopterAI.monument_crash = originalMonumentCrash;
+            if (patrolDestroyTimer != null && !patrolDestroyTimer.Destroyed)
+            {
+                patrolDestroyTimer.Destroy();
+                patrolDestroyTimer = null;
+            }
+
             isActive = false;
             playerDamage.Clear();
             totalDamageDealt = 0f;
