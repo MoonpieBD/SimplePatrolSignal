@@ -784,7 +784,7 @@ namespace Oxide.Plugins
         private class SupplySignalSettings
         {
             [JsonProperty("Skin ID")]
-            public ulong SkinId { get; set; } = 3332447426;
+            public ulong SkinId { get; set; } = 3520544256;
 
             [JsonProperty("Display Name")]
             public string DisplayName { get; set; } = "Patrol Heli Signal";
